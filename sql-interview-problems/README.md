@@ -10,6 +10,8 @@ Each problem file is self-contained:
 
 ## Problems
 
+### Core (window-function fundamentals)
+
 | # | Problem | Concepts |
 |---|---------|----------|
 | 01 | [Nth highest salary](01-nth-highest-salary.sql) | Window functions, `DENSE_RANK` |
@@ -22,3 +24,19 @@ Each problem file is self-contained:
 | 08 | [Longest active streak](08-longest-streak.sql) | Gaps-and-islands (`date - row_number` trick) |
 | 09 | [30-day rolling MAU](09-rolling-30d-mau.sql) | Distinct-count-over-window, HLL approximation tradeoff |
 | 10 | [Cohort retention table](10-cohort-retention.sql) | Cohort bucketing, conditional aggregation, pivoted output |
+
+### Advanced (patterns that come up in senior rounds)
+
+| # | Problem | Concepts |
+|---|---------|----------|
+| 11 | [Last-touch attribution](11-last-touch-attribution.sql) | As-of join, `LEFT JOIN` + window `ROW_NUMBER`, default bucket |
+| 12 | [Two-step funnel with timing](12-two-step-funnel-with-timing.sql) | `MIN` per step, chained interval checks, ordering bugs |
+| 13 | [Current active streak](13-current-streak.sql) | Gaps-and-islands, take the last island only |
+| 14 | [Percentile distribution by group](14-percentiles-by-group.sql) | `PERCENTILE_CONT` vs `DISC`, small-n reliability flag |
+| 15 | [Recursive manager hierarchy](15-recursive-hierarchy.sql) | Recursive CTE, cycle defence, up-vs-down traversal |
+| 16 | [Co-purchase product pairs](16-copurchase-pairs.sql) | Self-join with `<`, anti-double-count, lift extension |
+| 17 | [Top 3-step user paths](17-path-analysis.sql) | `LAG(..., k)`, users vs occurrences distinction |
+| 18 | [Event deduplication](18-event-dedup.sql) | Burst-collapse gaps-and-islands, transitive-window subtlety |
+
+Problem files are ~2-3KB each and readable top-to-bottom — prompt, solution, then a "why / pitfalls" section explaining where the pattern generalises and where it breaks.
+
