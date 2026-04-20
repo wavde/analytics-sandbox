@@ -17,3 +17,8 @@ Each problem file is self-contained:
 | 03 | [Funnel conversion](03-funnel-conversion.sql) | Conditional aggregation, self-joins |
 | 04 | [Rolling 7-day retention](04-rolling-retention.sql) | Date arithmetic, `LEFT JOIN` with window |
 | 05 | [Median without percentile_cont](05-median-from-scratch.sql) | Window functions, `NTILE` tricks |
+| 06 | [Top N per group](06-top-n-per-group.sql) | Partitioned window ranking, `DENSE_RANK` vs `ROW_NUMBER` |
+| 07 | [Month-over-month growth](07-mom-growth.sql) | `LAG`, `NULLIF`, calendar-spine pitfalls |
+| 08 | [Longest active streak](08-longest-streak.sql) | Gaps-and-islands (`date - row_number` trick) |
+| 09 | [30-day rolling MAU](09-rolling-30d-mau.sql) | Distinct-count-over-window, HLL approximation tradeoff |
+| 10 | [Cohort retention table](10-cohort-retention.sql) | Cohort bucketing, conditional aggregation, pivoted output |
