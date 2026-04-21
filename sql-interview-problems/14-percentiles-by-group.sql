@@ -2,7 +2,7 @@
 --
 -- Scenario
 -- --------
--- Netflix's streaming-infra SRE team tracks playback-start latency by
+-- A streaming service's SRE team tracks playback-start latency by
 -- region and needs the tail of the distribution — P50, P90, P99 per
 -- region — to monitor SLOs. Means hide the tail; the tail is the user
 -- experience that drives churn complaints. Where a region has very few

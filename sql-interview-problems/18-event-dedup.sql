@@ -2,7 +2,7 @@
 --
 -- Scenario
 -- --------
--- Meta's client event pipeline sits downstream of at-least-once delivery:
+-- A large consumer app's client event pipeline sits downstream of at-least-once delivery:
 -- SDK retries, client-side debounce failures, and message-queue replays
 -- all produce duplicate events a few seconds apart. Before the event
 -- stream is trustworthy for metrics, a dedup layer collapses each burst

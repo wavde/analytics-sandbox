@@ -2,12 +2,13 @@
 --
 -- Scenario
 -- --------
--- Netflix's home-row ranker needs a per-country "top titles" feed: the
+-- A streaming service's home-feed ranker needs a per-country "top titles" feed: the
 -- three highest-grossing (or most-watched) titles per country, feeding the
 -- "Top 10 in <country>" row on the home screen. The query shape is the
 -- same wherever a product surfaces leaderboards by segment — top sellers
--- per store on Amazon, top posts per community on Reddit, top artists per
--- market on Spotify.
+-- per store on an e-commerce marketplace, top posts per community on a
+-- community-posts platform, top artists per
+-- market on a music-streaming service.
 --
 -- Prompt
 -- ------

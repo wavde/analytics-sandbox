@@ -2,7 +2,7 @@
 --
 -- Scenario
 -- --------
--- Snapchat's streaks feature and Duolingo's current-streak counter both
+-- Messaging-app streaks and a learning app's current-streak counter both
 -- need the same number: for each user, the length of the run of
 -- consecutive active days ending at their most recent activity. Unlike
 -- "longest streak ever", a streak resets the moment a day is missed, and

@@ -2,7 +2,7 @@
 --
 -- Scenario
 -- --------
--- Meta's core growth pipeline publishes daily MAU: for each report day,
+-- A consumer platform's core growth pipeline publishes daily MAU: for each report day,
 -- the count of distinct users who performed at least one qualifying event
 -- in the trailing 30 days. The metric is one of the company's top-line
 -- numbers, produced at daily resolution across billions of events and

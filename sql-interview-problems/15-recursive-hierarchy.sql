@@ -2,10 +2,10 @@
 --
 -- Scenario
 -- --------
--- Meta's people-analytics team rolls up org data along the reporting
+-- A large tech company's people-analytics team rolls up org data along the reporting
 -- hierarchy: for each employee, the chain of managers up to the CEO and
 -- the hierarchy depth. The same query shape powers spend roll-ups by org,
--- category-tree walks on Amazon product data, and comment-thread
+-- category-tree walks on a large product catalog, and comment-thread
 -- traversals anywhere threaded content exists.
 --
 -- Prompt

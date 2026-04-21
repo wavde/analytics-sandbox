@@ -2,10 +2,10 @@
 --
 -- Scenario
 -- --------
--- Duolingo's engagement team reports power-user metrics in the form of
+-- A learning app's engagement team reports power-user metrics in the form of
 -- "longest streak ever": for each learner, the longest run of consecutive
--- active days they have ever completed. The same shape appears in Meta
--- Threads' daily poster stats and in most daily-habit products. The metric
+-- active days they have ever completed. The same shape appears in a
+-- microblogging app's daily poster stats and in most daily-habit products. The metric
 -- feeds retention deep-dives and is a direct proxy for the habit loop the
 -- product is trying to build.
 --

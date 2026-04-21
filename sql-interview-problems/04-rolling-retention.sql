@@ -2,7 +2,7 @@
 --
 -- Scenario
 -- --------
--- Spotify's subscription team tracks new-subscriber retention: of users who
+-- A music-streaming service's subscription team tracks new-subscriber retention: of users who
 -- first appeared on day D, what fraction came back on day D+7? The D7
 -- retention curve is one of the inputs to the LTV model and is reviewed
 -- weekly alongside churn and reactivation.

@@ -2,7 +2,7 @@
 --
 -- Scenario
 -- --------
--- Uber Eats surfaces "typical order value" in merchant-facing reporting.
+-- A food-delivery marketplace surfaces "typical order value" in merchant-facing reporting.
 -- The typical value is the median of order values, not the mean — long
 -- right tails from large group orders make the mean misleading. The
 -- reporting runtime is a SQL engine whose percentile function is either

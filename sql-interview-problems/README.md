@@ -1,8 +1,8 @@
 # Analytics SQL: FAANG-Style Problem Set
 
 A curated set of SQL problems drawn from the kinds of production questions
-analytics teams at Google, Netflix, Meta, Airbnb, Uber, Stripe, and similar
-companies actually answer. Useful whether you're preparing for an analytics
+analytics teams at FAANG-scale consumer tech companies actually answer.
+Useful whether you're preparing for an analytics
 interview or assembling a question bank to run one.
 
 Each file is self-contained:

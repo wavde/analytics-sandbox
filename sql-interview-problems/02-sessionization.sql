@@ -2,7 +2,7 @@
 --
 -- Scenario
 -- --------
--- Netflix's playback platform emits a stream of heartbeat events while a
+-- A streaming service's playback platform emits a stream of heartbeat events while a
 -- title is being watched. The consumer-insights team needs to reconstruct
 -- viewing sessions from that stream: a session is a run of heartbeats from
 -- the same profile with no gap longer than 30 minutes. Session boundaries

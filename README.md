@@ -14,8 +14,9 @@
 
 FAANG-style SQL problems written in standard PostgreSQL, with Spark SQL and
 other dialect notes where the portable syntax differs. Each problem is framed
-with a concrete production scenario (Netflix sessionisation, Stripe merchant
-revenue, Airbnb cohort retention, Meta event dedup, etc.) so the query isn't
+with a concrete production scenario (streaming-service sessionisation,
+payments-platform merchant revenue, travel-marketplace cohort retention,
+social-platform event dedup, etc.) so the query isn't
 abstract — it's the thing a real team would actually run.
 
 Split into two tiers:

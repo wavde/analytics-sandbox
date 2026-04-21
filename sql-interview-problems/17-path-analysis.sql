@@ -2,7 +2,7 @@
 --
 -- Scenario
 -- --------
--- Netflix's churn-analysis team studies what users actually do in the
+-- A subscription-streaming service's churn team studies what users actually do in the
 -- days before they cancel: which three-event sequences show up most often
 -- on the pre-churn path? Path analysis powers the "what journeys end in
 -- churn, conversion, upgrade?" questions that product reviews routinely

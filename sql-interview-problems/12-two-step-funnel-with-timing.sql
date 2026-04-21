@@ -2,7 +2,7 @@
 --
 -- Scenario
 -- --------
--- Airbnb measures search-to-book conversion within a 24-hour window: a
+-- A global marketplace for short-term rentals measures search-to-book conversion within a 24-hour window: a
 -- guest who searches, then clicks a listing within 24 hours, then books
 -- within 24 hours of that click. The chained timing matters — a booking
 -- that happens 10 days after a search is not attributable to that search

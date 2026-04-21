@@ -2,7 +2,7 @@
 --
 -- Scenario
 -- --------
--- Stripe's finance team prepares a monthly merchant-revenue update for
+-- A payments platform's finance team prepares a monthly merchant-revenue update for
 -- investors: total processed volume by month, the absolute change vs the
 -- prior month, and the percentage growth. The output feeds board charts
 -- and the narrative in the quarterly letter, so the numbers need to match

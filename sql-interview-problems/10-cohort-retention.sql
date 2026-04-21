@@ -2,7 +2,7 @@
 --
 -- Scenario
 -- --------
--- Airbnb's growth team runs a weekly-cohort retention heatmap: for each
+-- A travel-marketplace growth team runs a weekly-cohort retention heatmap: for each
 -- signup week, the percentage of users still active in day 0, week 1,
 -- week 2, weeks 3–4, weeks 5–8. The chart is the one every growth review
 -- opens on, and it's the single view that best describes whether a product

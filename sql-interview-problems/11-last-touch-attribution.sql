@@ -2,10 +2,10 @@
 --
 -- Scenario
 -- --------
--- Google Ads produces advertiser-facing attribution reports: each purchase
+-- A digital-ads platform produces advertiser-facing attribution reports: each purchase
 -- is credited to the channel of the user's most recent ad touch within the
 -- last 7 days, and purchases with no qualifying touch are bucketed as
--- 'direct'. The same query shape runs on YouTube ad spend, on affiliate
+-- 'direct'. The same query shape runs on video-platform ad spend, on affiliate
 -- networks, and on virtually every marketing-attribution dashboard.
 --
 -- Prompt

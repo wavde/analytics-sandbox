@@ -2,7 +2,7 @@
 --
 -- Scenario
 -- --------
--- A compensation analytics team at Meta is auditing pay bands across a job
+-- A compensation analytics team at a large tech company is auditing pay bands across a job
 -- family. They need to pull, for any given band, the Nth highest distinct
 -- salary — not the Nth highest employee, and not a duplicate-inflated rank.
 -- When there is no Nth value (the band has fewer than N distinct salaries),

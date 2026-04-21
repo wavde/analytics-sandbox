@@ -2,8 +2,8 @@
 --
 -- Scenario
 -- --------
--- Meta Marketplace runs a four-step buying funnel: view_product →
--- add_to_cart → checkout → purchase. The Marketplace growth team reports
+-- A social marketplace runs a four-step buying funnel: view_product →
+-- add_to_cart → checkout → purchase. The marketplace growth team reports
 -- daily conversion at each step for users who entered the funnel on a given
 -- day, with each later step required to happen within 24 hours of the
 -- initial view. The numbers drive A/B test readouts on checkout UI changes
@@ -88,5 +88,5 @@ FROM per_user;
 -- * Spark SQL lacks FILTER (WHERE ...); rewrite as
 --       SUM(CASE WHEN ... AND ... > ... THEN 1 ELSE 0 END)
 -- * For production, pre-aggregate `events` into a `user_day_events` array
---   or pivoted per-user table — self-joining raw events at Marketplace
+--   or pivoted per-user table — self-joining raw events at marketplace
 --   scale is expensive and the anchor view is the natural partition key.

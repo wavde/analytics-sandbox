@@ -2,7 +2,7 @@
 --
 -- Scenario
 -- --------
--- Amazon's "customers who bought X also bought Y" module needs a seed
+-- An e-commerce marketplace's "customers also bought" module needs a seed
 -- signal: product pairs that frequently co-occur in the same order. The
 -- SQL layer doesn't build the final recommender, but it produces the
 -- co-purchase counts (and, via lift, the strength of association) that
