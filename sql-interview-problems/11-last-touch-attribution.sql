@@ -27,6 +27,11 @@
 --                      — often the largest bucket — and shifts spend
 --                      decisions toward whichever paid channel happens to
 --                      be nearest in time to a purchase.
+--
+-- See also: paid-media-playbook / case 02 (MTA comparison) walks through
+-- what this SQL baseline systematically mis-measures, and what Markov
+-- removal-effect recovers instead:
+-- https://github.com/wavde/paid-media-playbook/tree/main/case-studies/02-mta-comparison
 
 -- Schema
 -- CREATE TABLE touches   (user_id BIGINT, touched_at   TIMESTAMP, channel   TEXT);
