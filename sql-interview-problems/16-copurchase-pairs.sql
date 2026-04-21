@@ -1,22 +1,43 @@
 -- Problem 16: Co-Purchase Product Pairs (Market Basket)
 --
--- Given `order_items` (order_id, product_id), find the top 10 product pairs
--- that most frequently appear together in the same order. A "pair" is
--- unordered: (A, B) is the same as (B, A).
+-- Scenario
+-- --------
+-- Amazon's "customers who bought X also bought Y" module needs a seed
+-- signal: product pairs that frequently co-occur in the same order. The
+-- SQL layer doesn't build the final recommender, but it produces the
+-- co-purchase counts (and, via lift, the strength of association) that
+-- feed downstream models and merchandising surfaces.
 --
--- Return: product_a, product_b, n_orders_together.
+-- Prompt
+-- ------
+-- Given `order_items (order_id, product_id)`, return the top 10 unordered
+-- product pairs by number of orders in which both appear. A pair (A, B)
+-- is the same as (B, A).
 --
--- Why this is asked: it's the first step of almost every recommender system
--- ("customers who bought X also bought Y"), and it forces candidates to think
--- carefully about self-joins with anti-duplication.
+-- Why this problem matters
+-- ------------------------
+-- Business relevance: Co-purchase analysis is the first step of most
+--                     market-basket and recommender pipelines, and a
+--                     standard input to merchandising and bundling work.
+-- Skill demonstrated:  Self-joining with a strict inequality to dedupe
+--                      unordered pairs, and recognising when the join
+--                      blows up at scale.
+-- Business impact:     A double-counted pair inflates co-purchase signal
+--                      and sends the wrong pairs to the recommender's
+--                      top-K, which shows up directly in on-site
+--                      merchandising quality.
 
 -- Schema
 -- CREATE TABLE order_items (order_id BIGINT, product_id BIGINT,
 --                           PRIMARY KEY (order_id, product_id));
 
 -- ============================================================================
--- Solution: self-join with product_a < product_b to avoid double-counting
+-- Approach
 -- ============================================================================
+-- Step 1: Self-join order_items to itself on order_id.
+-- Step 2: Require product_id_a < product_id_b so each unordered pair
+--         appears exactly once (this also eliminates self-pairs).
+-- Step 3: Count per (a, b) and take the top 10.
 SELECT
     a.product_id AS product_a,
     b.product_id AS product_b,
@@ -30,19 +51,20 @@ ORDER BY n_orders_together DESC
 LIMIT 10;
 
 -- ============================================================================
--- Why the `<` and not `<>` or `!=`
+-- Why `<` and not `<>`
 -- ============================================================================
--- `a.product_id <> b.product_id` is the "obvious" fix to drop self-pairs
--- (X with itself), but it still counts the pair TWICE: once as (A, B) and
--- once as (B, A). Always use strict `<` (or `>`) for unordered-pair joins.
+-- `a.product_id <> b.product_id` drops self-pairs (X with itself) but
+-- still counts each real pair twice: once as (A, B) and once as (B, A).
+-- Always use strict `<` (or `>`) for unordered-pair joins.
 --
--- This gives you an O(avg_basket_size^2) blow-up per order. For a handful of
--- items it's fine; for long baskets (thousands of SKUs) you'd switch to
--- approximate methods (MinHash / locality-sensitive hashing).
+-- Self-join cost is O(avg_basket_size^2) rows per order. For a few items
+-- per basket it's fine; for long baskets (thousands of SKUs per order,
+-- as in some B2B flows) it is the expensive part of the pipeline and
+-- approximate methods (MinHash, locality-sensitive hashing) or explicit
+-- basket-size caps become necessary.
 --
--- Extension: compute LIFT = P(A and B) / (P(A) * P(B)). A pair can be "sold
--- together a lot" just because both items are popular on their own; lift
--- normalises for that.
+-- Extension: LIFT = P(A and B) / (P(A) * P(B)). Two popular items will
+-- co-occur a lot just because both are popular; lift normalises for that.
 --
 --   WITH pair_counts AS (...above query without LIMIT...),
 --        item_counts AS (SELECT product_id, COUNT(*) AS n FROM order_items GROUP BY 1),

@@ -1,16 +1,33 @@
--- Problem 08: Longest consecutive-day active streak per user
+-- Problem 08: Longest Consecutive-Day Active Streak Per User
 --
--- Given a `daily_activity` table (one row per user per active day), return
--- each user's longest streak of consecutive active days.
+-- Scenario
+-- --------
+-- Duolingo's engagement team reports power-user metrics in the form of
+-- "longest streak ever": for each learner, the longest run of consecutive
+-- active days they have ever completed. The same shape appears in Meta
+-- Threads' daily poster stats and in most daily-habit products. The metric
+-- feeds retention deep-dives and is a direct proxy for the habit loop the
+-- product is trying to build.
 --
--- This is a classic gaps-and-islands extension. The elegant trick:
+-- Prompt
+-- ------
+-- Given `daily_activity (user_id, active_date)` with one row per user per
+-- active day, return each user's longest streak of consecutive active days
+-- along with its start and end dates.
 --
---     (date - ROW_NUMBER() OVER (PARTITION BY user ORDER BY date))
---     is constant WITHIN a consecutive-day run, and DIFFERENT across runs.
---
--- Why: if dates are consecutive (d, d+1, d+2, ...) and row numbers are
--- (1, 2, 3, ...), then (date - rn) is constant. A one-day gap shifts rn
--- but not date, breaking the constant.
+-- Why this problem matters
+-- ------------------------
+-- Business relevance: Longest-streak stats are a standard habit-formation
+--                     metric and also show up wherever consecutive-run
+--                     logic matters — uptime, subscription continuity,
+--                     consecutive wins.
+-- Skill demonstrated:  The "date minus row number" island key — the
+--                      cleanest way to assign run ids over consecutive
+--                      integers or dates without a LAG-and-running-sum.
+-- Business impact:     Streak numbers frequently surface in user-facing
+--                      UI (badges, leaderboards). A miscounted streak
+--                      erodes trust quickly because users verify against
+--                      their own memory.
 
 -- Schema
 -- CREATE TABLE daily_activity (
@@ -19,8 +36,16 @@
 -- );
 
 -- ============================================================================
--- Solution: the "date minus row number" island key
+-- Approach
 -- ============================================================================
+-- Step 1: Within each user ordered by date, compute an island key equal to
+--         active_date minus the row number. For strictly consecutive dates
+--         the key is constant; a gap of even one day shifts the row number
+--         relative to the date, producing a fresh island key.
+-- Step 2: GROUP BY (user_id, island_key) to collapse each run into a row
+--         with its length and start/end dates.
+-- Step 3: Rank islands within user by length, keeping the longest (ties
+--         broken by earliest start).
 WITH runs AS (
     SELECT
         user_id,
@@ -57,12 +82,13 @@ WHERE rn = 1
 ORDER BY streak_length DESC;
 
 -- ============================================================================
--- Why this beats LAG + running sum here
+-- When to prefer this over LAG + running sum
 -- ============================================================================
--- You can also flag gaps with LAG and running-sum them (see problem 02), but
--- for *strictly consecutive integers or dates*, the "date - row_number"
--- trick is one CTE shorter. For variable-interval sessions (e.g. 30-min
--- timeout), LAG is the right tool. Knowing which to reach for is the signal
--- interviewers are looking for.
+-- Gap-flagging with LAG + a running sum (see problem 02) also works, but
+-- for *strictly consecutive integers or dates* the "date minus row number"
+-- trick is one CTE shorter and avoids the sentinel NULL on the first row.
+-- For variable-interval sessions (e.g., 30-minute timeouts) LAG is the
+-- right tool; for fixed-interval runs, this one is.
 --
--- Spark SQL: works identically. MySQL 8+ supports window functions.
+-- Spark SQL: works identically; replace ::INT with CAST(... AS INT).
+-- MySQL 8+ supports window functions.

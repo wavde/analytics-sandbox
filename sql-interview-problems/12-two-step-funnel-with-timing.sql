@@ -1,23 +1,46 @@
 -- Problem 12: Two-Step Funnel With Ordered Timing
 --
--- Events table has (user_id, event_name, event_at). For each user who viewed
--- a product, compute: did they add-to-cart within 24h of the view, AND did
--- they purchase within 24h of that add-to-cart?
+-- Scenario
+-- --------
+-- Airbnb measures search-to-book conversion within a 24-hour window: a
+-- guest who searches, then clicks a listing within 24 hours, then books
+-- within 24 hours of that click. The chained timing matters — a booking
+-- that happens 10 days after a search is not attributable to that search
+-- session, and counting it inflates the funnel.
 --
--- Return per-user flags: viewed, added_in_24h, purchased_in_24h_of_add,
--- plus the funnel conversion rates at each step.
+-- Prompt
+-- ------
+-- Given `events (user_id, event_name, event_at)` with events in
+-- {'view', 'add_to_cart', 'purchase'}, for each user who viewed compute:
+-- did they add within 24h of the view, and did they purchase within 24h
+-- of that add? Return the step counts and step-to-step conversion rates.
 --
--- Why this is asked: real funnels have ORDERING and TIMING. A candidate who
--- only counts "did user do X and Y" without the time constraint has built a
--- lift chart, not a funnel, and will mis-report conversion.
+-- Why this problem matters
+-- ------------------------
+-- Business relevance: Time-bounded funnels are how product and growth
+--                     teams actually measure conversion. Unbounded "ever
+--                     did X then Y" funnels overstate conversion and mask
+--                     regressions.
+-- Skill demonstrated:  Correctly chaining step timing (step K within
+--                      window of step K-1, not step 1) and avoiding the
+--                      cartesian self-join explosion.
+-- Business impact:     An inflated funnel number hides regressions in
+--                      A/B tests and routes investment toward experiments
+--                      that didn't actually move the metric.
 
 -- Schema
 -- CREATE TABLE events (user_id BIGINT, event_name TEXT, event_at TIMESTAMP);
 -- event_name in ('view', 'add_to_cart', 'purchase')
 
 -- ============================================================================
--- Solution: MIN timestamp per step, then chained interval checks
+-- Approach
 -- ============================================================================
+-- Step 1: Per user, take MIN(event_at) for each step — collapses a user's
+--         many events per step down to one anchor timestamp per step.
+-- Step 2: Flag step 2 as reached if the user's add_to_cart is within 24h
+--         of their view; flag step 3 as reached if the user's purchase is
+--         within 24h of the add (NOT of the view).
+-- Step 3: Aggregate to viewer counts and step-to-step percentages.
 WITH first_steps AS (
     SELECT
         user_id,
@@ -52,13 +75,13 @@ FROM flagged;
 -- ============================================================================
 -- Why the MIN-timestamp pattern
 -- ============================================================================
--- The naive self-join (events e1 JOIN events e2 JOIN events e3 ON user/time
--- ordering) works but explodes if a user has many events per step — you get
--- the cartesian product, then DISTINCT, which is O(N^3) and wrong for
--- percent-conversion denominators. Taking MIN(event_at) per (user, step)
--- collapses each user to one row per funnel step before you combine.
+-- A three-way self-join across events with user/time ordering constraints
+-- works, but explodes when a user has many events per step — the
+-- intermediate cartesian product followed by DISTINCT is O(N^3) and
+-- produces wrong denominators for percent-conversion. Collapsing each
+-- user to one row per funnel step via MIN(event_at) makes the rest of the
+-- logic linear in users.
 --
--- The remaining subtlety is the step-chaining bug: candidates often gate
--- step 3 on "purchase within 24h of VIEW" instead of "within 24h of ADD".
--- That silently widens the funnel and inflates conversion. Always chain:
--- step K must be within window of step K-1, not step 1.
+-- The remaining subtlety is the step-chaining bug: gating step 3 on
+-- "purchase within 24h of VIEW" instead of "within 24h of ADD" silently
+-- widens the funnel. Step K should always be measured against step K-1.

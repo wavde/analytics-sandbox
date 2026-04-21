@@ -1,12 +1,16 @@
-# SQL Interview Problems
+# Analytics SQL: FAANG-Style Problem Set
 
-FAANG-style SQL problems — the kind that show up in analytics interviews at Google, Netflix, Meta, Airbnb, Uber, and Stripe.
+A curated set of SQL problems drawn from the kinds of production questions
+analytics teams at Google, Netflix, Meta, Airbnb, Uber, Stripe, and similar
+companies actually answer. Useful whether you're preparing for an analytics
+interview or assembling a question bank to run one.
 
-Each problem file is self-contained:
-1. The prompt
-2. The schema
-3. The solution (PostgreSQL syntax by default)
-4. A short note on the approach and any Spark SQL / dialect differences
+Each file is self-contained:
+1. A concrete business scenario naming a team and the decision at stake
+2. The formal prompt
+3. The schema
+4. The solution (PostgreSQL syntax by default)
+5. Notes on approach, pitfalls, and Spark SQL / other dialect differences
 
 ## Problems
 
@@ -25,7 +29,7 @@ Each problem file is self-contained:
 | 09 | [30-day rolling MAU](09-rolling-30d-mau.sql) | Distinct-count-over-window, HLL approximation tradeoff |
 | 10 | [Cohort retention table](10-cohort-retention.sql) | Cohort bucketing, conditional aggregation, pivoted output |
 
-### Advanced (patterns that come up in senior rounds)
+### Advanced
 
 | # | Problem | Concepts |
 |---|---------|----------|
@@ -38,5 +42,6 @@ Each problem file is self-contained:
 | 17 | [Top 3-step user paths](17-path-analysis.sql) | `LAG(..., k)`, users vs occurrences distinction |
 | 18 | [Event deduplication](18-event-dedup.sql) | Burst-collapse gaps-and-islands, transitive-window subtlety |
 
-Problem files are ~2-3KB each and readable top-to-bottom — prompt, solution, then a "why / pitfalls" section explaining where the pattern generalises and where it breaks.
-
+Files are intentionally short — roughly 2–3 KB each and readable top-to-bottom.
+The "pitfalls" and "dialect notes" sections are the point: they capture where
+each pattern generalises and where it quietly breaks in production.

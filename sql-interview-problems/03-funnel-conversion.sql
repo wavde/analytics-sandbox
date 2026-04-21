@@ -1,10 +1,34 @@
 -- Problem 03: Funnel Conversion
 --
--- You have an `events` table with (user_id, event_name, event_time).
--- For users who performed "view_product" on a given day, compute the
--- conversion rate through the funnel:
---   view_product -> add_to_cart -> checkout -> purchase
--- where each step must occur AFTER the previous step (within 24 hours).
+-- Scenario
+-- --------
+-- Meta Marketplace runs a four-step buying funnel: view_product →
+-- add_to_cart → checkout → purchase. The Marketplace growth team reports
+-- daily conversion at each step for users who entered the funnel on a given
+-- day, with each later step required to happen within 24 hours of the
+-- initial view. The numbers drive A/B test readouts on checkout UI changes
+-- and weekly ops reviews.
+--
+-- Prompt
+-- ------
+-- Given `events (user_id, event_name, event_time)`, for users whose first
+-- `view_product` on `:target_date` anchors the funnel, compute the
+-- counts and step-to-step conversion rates through
+-- view_product → add_to_cart → checkout → purchase, with each step required
+-- to occur strictly after the previous step and within 24 hours of the view.
+--
+-- Why this problem matters
+-- ------------------------
+-- Business relevance: Funnel conversion rates power checkout experiments,
+--                     weekly business reviews, and growth-loop diagnostics
+--                     across every consumer product.
+-- Skill demonstrated:  Using conditional aggregation with ordering
+--                      constraints to build a correct funnel in one pass,
+--                      instead of cascading self-joins that over-count.
+-- Business impact:     Ignoring the ordering constraint inflates
+--                      conversion, hiding real regressions in an A/B test
+--                      and pointing experimentation reviews at the wrong
+--                      variant.
 
 -- Schema
 -- CREATE TABLE events (
@@ -14,8 +38,15 @@
 -- );
 
 -- ============================================================================
--- Solution: conditional aggregation with ordered existence checks
+-- Approach
 -- ============================================================================
+-- Step 1: Find each user's first view on the target day — that anchors the
+--         24-hour funnel window for that user.
+-- Step 2: LEFT JOIN each user's subsequent events within 24 hours of the
+--         anchor view and take MIN(event_time) per step. One row per user.
+-- Step 3: At the outer level, count users who reached each step with the
+--         ordering constraint (each step's timestamp must exceed the prior
+--         step's) and turn those counts into step-to-step percentages.
 WITH first_views AS (
     SELECT user_id, MIN(event_time) AS viewed_at
     FROM events
@@ -51,10 +82,11 @@ FROM per_user;
 -- ============================================================================
 -- Notes
 -- ============================================================================
--- * The ordering constraint ("must occur AFTER previous step") is the tricky
---   part. Forgetting it gives an inflated conversion rate because users who
+-- * The ordering constraint ("must occur AFTER the previous step") is the
+--   trap. Dropping it gives an inflated conversion rate because users who
 --   add to cart BEFORE viewing the specific product still get counted.
 -- * Spark SQL lacks FILTER (WHERE ...); rewrite as
 --       SUM(CASE WHEN ... AND ... > ... THEN 1 ELSE 0 END)
--- * For production, pre-aggregate `events` into a `user_day_events` array or
---   use pivoted tables — self-joining raw events at scale is expensive.
+-- * For production, pre-aggregate `events` into a `user_day_events` array
+--   or pivoted per-user table — self-joining raw events at Marketplace
+--   scale is expensive and the anchor view is the natural partition key.

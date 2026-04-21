@@ -1,20 +1,43 @@
 -- Problem 14: Percentile Distribution By Group
 --
--- For each product category, compute P50, P90, and P99 of order value. Return
--- category, p50, p90, p99, n_orders. Handle the case where some categories
--- have < 20 orders (percentile estimates unstable — flag them).
+-- Scenario
+-- --------
+-- Netflix's streaming-infra SRE team tracks playback-start latency by
+-- region and needs the tail of the distribution — P50, P90, P99 per
+-- region — to monitor SLOs. Means hide the tail; the tail is the user
+-- experience that drives churn complaints. Where a region has very few
+-- samples in a reporting window, the P99 is effectively noise and should
+-- be flagged as such.
 --
--- Why this is asked: every pricing / unit-economics analysis needs reliable
--- percentile tails. Candidates who use AVG for "typical order value" get
--- misled by long right tails. Candidates who use PERCENTILE_CONT blindly
--- without a sample-size guard report noise.
+-- Prompt
+-- ------
+-- For each category, compute P50, P90, and P99 of a numeric column.
+-- Return category, p50, p90, p99, n_orders. Flag groups with fewer than
+-- 20 observations as having unstable percentile estimates.
+--
+-- Why this problem matters
+-- ------------------------
+-- Business relevance: Tail metrics (latency P99, order-value P90) are the
+--                     standard way to describe user experience and
+--                     unit-economics risk — often more informative than
+--                     means.
+-- Skill demonstrated:  Fluency with PERCENTILE_CONT / PERCENTILE_DISC,
+--                      and the statistical judgment to flag under-sampled
+--                      groups rather than report noise as signal.
+-- Business impact:     A P99 reported from 10 samples is essentially the
+--                      max of 10 draws — reacting to it triggers false
+--                      alarms and erodes the team's on-call credibility.
 
 -- Schema
 -- CREATE TABLE orders (order_id BIGINT, category TEXT, order_value NUMERIC);
 
 -- ============================================================================
--- Solution: PERCENTILE_CONT within a GROUP, with a small-n flag
+-- Approach
 -- ============================================================================
+-- Step 1: Group by category.
+-- Step 2: Compute PERCENTILE_CONT at 0.50, 0.90, 0.99 within each group.
+-- Step 3: Attach a sample-size reliability flag so downstream consumers
+--         can visually or programmatically demote under-sampled rows.
 SELECT
     category,
     COUNT(*)                                                      AS n_orders,
@@ -29,19 +52,21 @@ ORDER BY p90 DESC;
 -- ============================================================================
 -- PERCENTILE_CONT vs PERCENTILE_DISC
 -- ============================================================================
--- CONT interpolates between adjacent values (returns any real number in the
--- observed range). DISC returns an actual observed value. Use CONT for
--- continuous metrics (revenue, latency). Use DISC when a made-up intermediate
--- would be nonsensical — e.g., "median item count" should be an integer.
+-- CONT interpolates between adjacent values (returns any real number in
+-- the observed range). DISC returns an actual observed value. Use CONT
+-- for continuous metrics (revenue, latency). Use DISC when a made-up
+-- intermediate would be nonsensical — for example, "median item count"
+-- should be an integer.
 --
 -- Dialect notes:
 -- * Postgres: exact syntax above.
 -- * Spark SQL: use PERCENTILE (inverse distribution function) on arrays:
 --     PERCENTILE(order_value, array(0.5, 0.9, 0.99))
--- * Snowflake / BigQuery: APPROX_PERCENTILE / APPROX_QUANTILES for sublinear
---   memory on huge tables. Document when you switch — approx is not exact.
+-- * Snowflake / BigQuery: APPROX_PERCENTILE / APPROX_QUANTILES for
+--   sublinear memory on huge tables. Document the switch — approximate
+--   is not exact, and SRE alert thresholds should account for that.
 --
--- Sampling rule of thumb: you need ~100 * (1 - p) observations per group
--- to get a stable P_p estimate. 99th percentile at n=20 is 0.2 observations
--- in the tail — effectively the max of 20 draws. That's the reason for the
--- reliability flag.
+-- Sample-size rule of thumb: roughly 100 * (1 - p) observations per group
+-- are needed for a stable P_p estimate. At n = 20, P99 is 0.2 observations
+-- in the tail — effectively the max of 20 draws. That's the reliability
+-- flag's reason to exist.

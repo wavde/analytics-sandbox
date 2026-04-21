@@ -1,25 +1,47 @@
--- Problem 17: Top 3-Step User Paths Through the Funnel
+-- Problem 17: Top 3-Step User Paths Through The Product
 --
--- Given `events` (user_id, event_name, event_at), find the 10 most common
--- ordered sequences of 3 events per user. Events within the same user should
--- be ordered by timestamp. Only use each user's FIRST occurrence of each
--- event if you want a clean first-path; for this problem, use the raw
--- sequence (every event counted in order).
+-- Scenario
+-- --------
+-- Netflix's churn-analysis team studies what users actually do in the
+-- days before they cancel: which three-event sequences show up most often
+-- on the pre-churn path? Path analysis powers the "what journeys end in
+-- churn, conversion, upgrade?" questions that product reviews routinely
+-- ask and that dedicated path-analytics tools answer at much higher cost.
 --
--- Return: step_1, step_2, step_3, n_users.
+-- Prompt
+-- ------
+-- Given `events (user_id, event_name, event_at)`, find the 10 most common
+-- ordered 3-step event sequences per user. Order within a user is by
+-- event_at. Use the raw sequence (every event counts in order), not the
+-- first-occurrence-only variant.
 --
--- Why this is asked: "path analysis" powers every product-team answer to
--- "what are users actually doing before they churn / convert / upgrade?"
--- Doing it in SQL (rather than a specialised tool) requires composing LAG
--- with window ordering — a key test of whether a candidate can write
--- interview-grade window-function code.
+-- Why this problem matters
+-- ------------------------
+-- Business relevance: Path analysis in SQL is the cheapest way to answer
+--                     "what are users doing before X?" questions without
+--                     standing up a specialised product-analytics tool.
+-- Skill demonstrated:  Composing LAG(..., k) over an ordered window to
+--                      materialise multi-step sequences, and reporting
+--                      both distinct-users and occurrence counts so the
+--                      number matches the stakeholder's question.
+-- Business impact:     Confusing "users who walked this path" with "times
+--                      this path was walked" is a top source of
+--                      dashboard-reading errors in product analytics —
+--                      the same path can have high occurrence and low
+--                      user count when a few power users loop through it.
 
 -- Schema
 -- CREATE TABLE events (user_id BIGINT, event_name TEXT, event_at TIMESTAMP);
 
 -- ============================================================================
--- Solution: LAG twice, then group by the (step1, step2, step3) tuple
+-- Approach
 -- ============================================================================
+-- Step 1: Order each user's events by time and attach a position index.
+-- Step 2: Use LAG(event_name, 2) and LAG(event_name, 1) within the user
+--         window to materialise (step_1, step_2, step_3) on every row.
+-- Step 3: Drop rows missing prior steps (first two positions per user),
+--         then GROUP BY the triple and count distinct users and total
+--         occurrences.
 WITH ordered AS (
     SELECT
         user_id,
@@ -52,20 +74,21 @@ LIMIT 10;
 -- ============================================================================
 -- Users vs occurrences
 -- ============================================================================
--- The query reports BOTH n_users (distinct users who ever walked this path)
--- and n_path_occurrences (total times anyone walked it). A path can have
--- high occurrence but low distinct users — meaning a few power users trigger
--- the same loop many times. Report both, or pick the one your stakeholder
--- cares about. Confusing "users" with "events" is one of the top
--- dashboard-reading errors in product analytics.
+-- The query reports BOTH n_users (distinct users who ever walked this
+-- path) and n_path_occurrences (total times the path was walked across
+-- anyone). A path can have high occurrence but low distinct users,
+-- meaning a small set of power users trigger the same loop repeatedly.
+-- Report both, or pick the one the stakeholder cares about.
 --
 -- Variants:
--- * First-touch path: rank events within (user, event_name) and keep rank=1
+-- * First-touch path: rank within (user, event_name) and keep rank = 1
 --   before the LAG step, so each user contributes each event at most once.
--- * Time-bounded path: add `event_at - LAG(event_at, 1) OVER w <= INTERVAL '1 hour'`
---   to the triples CTE filter to only count tightly sequential paths.
+-- * Time-bounded path: add
+--     event_at - LAG(event_at, 1) OVER w <= INTERVAL '1 hour'
+--   to the triples CTE to only count tightly sequential paths.
 -- * N-step paths: generalise with LAG(event_name, k) for k = n-1, ..., 1.
 --
--- Performance: triples CTE is N rows (same as events table). The GROUP BY
--- materialises only the distinct 3-tuples. For large event tables, push the
--- ROW_NUMBER filter (keep pos <= K_max) or sessionise first.
+-- Performance: the triples CTE has the same row count as events. The
+-- GROUP BY materialises only distinct 3-tuples. For large event tables,
+-- push a ROW_NUMBER filter (keep pos <= K_max) or sessionise first so
+-- paths do not bridge logically distinct sessions.

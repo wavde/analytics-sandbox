@@ -1,8 +1,34 @@
 -- Problem 05: Median Without PERCENTILE_CONT
 --
--- Compute the median of a salary column WITHOUT using PERCENTILE_CONT /
--- PERCENTILE_DISC / approx_percentile. Interviewers ask this to probe whether
--- you understand what a median actually is.
+-- Scenario
+-- --------
+-- Uber Eats surfaces "typical order value" in merchant-facing reporting.
+-- The typical value is the median of order values, not the mean — long
+-- right tails from large group orders make the mean misleading. The
+-- reporting runtime is a SQL engine whose percentile function is either
+-- unavailable or unreliable on the data volumes involved, so the median
+-- has to be computed from first principles.
+--
+-- Prompt
+-- ------
+-- Compute the median of a numeric column without using PERCENTILE_CONT,
+-- PERCENTILE_DISC, or an approx_percentile function.
+--
+-- Why this problem matters
+-- ------------------------
+-- Business relevance: Median-of-distribution reporting (order value, ride
+--                     fare, session length) is a recurring need for any
+--                     engine or dialect where percentile functions are
+--                     missing, slow, or non-deterministic.
+-- Skill demonstrated:  Knowing what a median actually is — the middle
+--                      ordered value for odd n, the average of the two
+--                      middle values for even n — and expressing that
+--                      directly with ROW_NUMBER and COUNT.
+-- Business impact:     Reporting the mean in place of the median on
+--                      heavy-tailed distributions consistently overstates
+--                      "typical" values in merchant dashboards, which
+--                      shows up as trust issues when operators compare
+--                      the dashboard to what they see in the field.
 
 -- Schema
 -- CREATE TABLE employees (
@@ -11,8 +37,14 @@
 -- );
 
 -- ============================================================================
--- Solution: ROW_NUMBER + COUNT, average the middle row(s)
+-- Approach
 -- ============================================================================
+-- Step 1: Attach to every row its ordered position (ROW_NUMBER) and the
+--         total row count (COUNT(*) OVER ()).
+-- Step 2: Pick the middle row(s): (n+1)/2 and (n+2)/2 under integer
+--         division collapse to the single middle row when n is odd, and to
+--         the two middle rows when n is even.
+-- Step 3: Average those one or two selected rows.
 WITH ranked AS (
     SELECT
         salary,
@@ -30,13 +62,14 @@ WHERE
 -- Why this works
 -- ============================================================================
 -- For odd n:  (n+1)/2 and (n+2)/2 are both equal to (n+1)/2 after integer
---             division, so we pick one row, and AVG returns its salary.
--- For even n: they are n/2 and n/2+1, so we pick both middle rows, and AVG
---             returns their average.
+--             division, so one row is selected and AVG returns its value.
+-- For even n: the two expressions evaluate to n/2 and n/2+1, selecting both
+--             middle rows; AVG returns their mean.
 --
--- Works in both PostgreSQL and Spark SQL (division is integer by default
--- only in Spark when both operands are ints — cast `n` to int first).
+-- Works in PostgreSQL and Spark SQL. In Spark, integer division only holds
+-- when both operands are integers — cast `n` to int explicitly.
 --
 -- Grouped median: add PARTITION BY dept to both window functions. This is
--- harder with percentile functions in some dialects, so the ROW_NUMBER trick
--- is often faster to write.
+-- harder to express with percentile functions in some dialects, and the
+-- ROW_NUMBER trick has predictable memory cost — one sort per partition,
+-- no hidden accumulator behaviour.

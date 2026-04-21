@@ -1,20 +1,46 @@
--- Problem 10: Cohort retention table (Day-0 / Day-7 / Day-30)
+-- Problem 10: Cohort Retention Table (Day-0 / Week-1 / Week-2 / ...)
 --
--- Given a `users` table (signup cohort) and an `events` table (user activity),
--- produce a pivoted retention table showing, per signup-week cohort,
--- the % of users still active in Day-1-through-7, Day-8-through-14, etc.
+-- Scenario
+-- --------
+-- Airbnb's growth team runs a weekly-cohort retention heatmap: for each
+-- signup week, the percentage of users still active in day 0, week 1,
+-- week 2, weeks 3–4, weeks 5–8. The chart is the one every growth review
+-- opens on, and it's the single view that best describes whether a product
+-- change bent the retention curve.
 --
--- This is the one chart every PM wants. The 7-day cohort-retention heatmap
--- was the original "North-star visualization" at Facebook, Airbnb, and
--- Spotify. Know the pattern.
+-- Prompt
+-- ------
+-- Given `users (user_id, signup_date)` and `events (user_id, event_time)`,
+-- produce a pivoted retention table where each row is a signup-week cohort
+-- and each column is the percentage of users still active in a given
+-- days-since-signup bucket.
+--
+-- Why this problem matters
+-- ------------------------
+-- Business relevance: Cohort retention heatmaps are a primary diagnostic
+--                     for product changes, onboarding experiments, and
+--                     channel-quality comparisons.
+-- Skill demonstrated:  Careful cohort-denominator arithmetic, bucketing
+--                      days-since-signup, and pivoting output with
+--                      conditional aggregation.
+-- Business impact:     A denominator swap (active-on-day-0 vs signed-up)
+--                      produces retention numbers greater than 100% in
+--                      later weeks — a visible error that shows up in
+--                      shipped dashboards more often than it should.
 
 -- Schema
 -- CREATE TABLE users  (user_id BIGINT, signup_date DATE);
 -- CREATE TABLE events (user_id BIGINT, event_time TIMESTAMP);
 
 -- ============================================================================
--- Solution: bucket by "days since signup" then pivot
+-- Approach
 -- ============================================================================
+-- Step 1: Assign each user to a signup-week cohort.
+-- Step 2: For each (user, event) compute days-since-signup and bucket into
+--         d0 / w1 / w2 / w3_4 / w5_8.
+-- Step 3: Count distinct users hitting each bucket per cohort.
+-- Step 4: Divide by the cohort's signup count (NOT the day-0 active count)
+--         and pivot the buckets into columns.
 WITH cohort_users AS (
     SELECT
         user_id,
@@ -69,17 +95,17 @@ GROUP BY b.cohort_week, cs.n_signed_up
 ORDER BY b.cohort_week;
 
 -- ============================================================================
--- Gotchas interviewers probe
+-- Gotchas
 -- ============================================================================
--- 1. Days-since-signup should use DATE DIFFERENCE (not time), or you'll
---    miscount events that happened hours-but-not-a-full-day later.
--- 2. Bucket edges: "w1" could mean days 1-7 OR days 1-6 depending on
---    convention. Be explicit.
+-- 1. Days-since-signup should use DATE DIFFERENCE (not raw timestamp math),
+--    or events that happen hours-but-not-a-full-day later get miscounted.
+-- 2. Bucket edges: "w1" could mean days 1–7 or days 1–6 depending on
+--    convention. Be explicit and write the convention down next to the chart.
 -- 3. The cohort SIZE denominator is the number of users who SIGNED UP in
---    that cohort week, not the number who were active on Day 0. Mixing
---    these up produces > 100% retention in later buckets (which happens
---    in production dashboards more often than you'd think).
+--    that cohort week, not the number active on Day 0. Mixing these up
+--    produces > 100% retention in later buckets — a bug that ships to
+--    production dashboards more often than anyone admits.
 -- 4. At scale, pre-aggregate per (cohort_week, user_id, bucket) in a
---    materialized view; the pivot is cheap, the join is not.
+--    materialised view; the pivot is cheap, the join is not.
 --
--- Spark SQL: identical, use datediff() instead of DATE_DIFF().
+-- Spark SQL: identical; use datediff() in place of DATE_DIFF().
