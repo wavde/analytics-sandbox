@@ -1,7 +1,7 @@
-# Analytics SQL: FAANG-Style Problem Set
+# Analytics SQL: Production Problem Set
 
 A curated set of SQL problems drawn from the kinds of production questions
-analytics teams at FAANG-scale consumer tech companies actually answer.
+analytics teams at large-scale consumer tech companies actually answer.
 Useful whether you're preparing for an analytics
 interview or assembling a question bank to run one.
 
