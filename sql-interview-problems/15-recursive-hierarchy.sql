@@ -41,7 +41,9 @@
 -- Step 2: Recursive step — join the current row's manager_id back into
 --         employees to add the next person above in the chain, bumping
 --         depth and appending to the chain string.
--- Step 3: After recursion, per starting employee take the maximum depth
+-- Step 3: Carry a visited-id path and stop recursion if dirty data would
+--         revisit an employee already in the chain.
+-- Step 4: After recursion, per starting employee take the maximum depth
 --         and the chain that terminates at the root (manager_id IS NULL).
 WITH RECURSIVE manager_chain AS (
     -- Base case: each employee is at level 0 pointing at themselves
@@ -51,7 +53,8 @@ WITH RECURSIVE manager_chain AS (
         manager_id,
         name,
         0                 AS depth,
-        name              AS chain
+        name              AS chain,
+        ARRAY[employee_id] AS visited_ids
     FROM employees
 
     UNION ALL
@@ -63,13 +66,15 @@ WITH RECURSIVE manager_chain AS (
         e.manager_id,
         e.name,
         mc.depth + 1,
-        mc.chain || ' -> ' || e.name
+        mc.chain || ' -> ' || e.name,
+        mc.visited_ids || e.employee_id
     FROM manager_chain mc
     JOIN employees e ON e.employee_id = mc.manager_id
+    WHERE NOT e.employee_id = ANY(mc.visited_ids)
 )
 SELECT
     start_employee_id,
-    MAX(depth)                              AS depth_from_ceo,
+    MAX(depth)                                   AS depth_from_ceo,
     MAX(chain) FILTER (WHERE manager_id IS NULL) AS full_chain_to_ceo
 FROM manager_chain
 GROUP BY start_employee_id
@@ -87,10 +92,11 @@ ORDER BY depth_from_ceo DESC, start_employee_id;
 --   * "Total spend rolled up by org"    -> walk DOWN, aggregate per level.
 --
 -- Cycle defence: dirty data (rare but seen during mid-flight org changes)
--- causes infinite recursion. Add a depth guard — e.g., WHERE depth < 20
--- — or carry a visited set via array_append with NOT(... = ANY(visited)).
+-- causes infinite recursion unless the query carries a visited set. The
+-- visited_ids array above stops before revisiting an employee already in
+-- the current path; rows trapped in a cycle will have NULL full_chain_to_ceo.
 --
--- Spark SQL does NOT support recursive CTEs. On Spark, either iterate in
--- the application layer, flatten via N self-joins up to a max depth, or
--- use GraphFrames. In most interviews Postgres / Snowflake / BigQuery
--- syntax is accepted — state the assumed dialect upfront.
+-- Dialect support: this version is PostgreSQL-specific because it uses a
+-- recursive CTE plus arrays. Spark SQL does NOT support recursive CTEs; on
+-- Spark, either iterate in the application layer, flatten via N self-joins
+-- up to a max depth, or use GraphFrames.

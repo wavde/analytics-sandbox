@@ -35,53 +35,68 @@
 -- ============================================================================
 -- Approach
 -- ============================================================================
--- Step 1: Per user, take MIN(event_at) for each step — collapses a user's
---         many events per step down to one anchor timestamp per step.
--- Step 2: Flag step 2 as reached if the user's add_to_cart is within 24h
---         of their view; flag step 3 as reached if the user's purchase is
---         within 24h of the add (NOT of the view).
--- Step 3: Aggregate to viewer counts and step-to-step percentages.
-WITH first_steps AS (
+-- Step 1: Per user, choose the first view as the funnel anchor.
+-- Step 2: For that anchor, choose the earliest valid add_to_cart after the
+--         view and within 24h.
+-- Step 3: For that add, choose the earliest valid purchase after the add
+--         and within the next 24h.
+-- Step 4: Aggregate to viewer counts and step-to-step percentages.
+WITH first_views AS (
     SELECT
         user_id,
-        MIN(CASE WHEN event_name = 'view'        THEN event_at END) AS viewed_at,
-        MIN(CASE WHEN event_name = 'add_to_cart' THEN event_at END) AS added_at,
-        MIN(CASE WHEN event_name = 'purchase'    THEN event_at END) AS purchased_at
+        MIN(event_at) AS viewed_at
     FROM events
+    WHERE event_name = 'view'
     GROUP BY user_id
 ),
-flagged AS (
+first_adds AS (
     SELECT
-        user_id,
-        viewed_at IS NOT NULL AS viewed,
-        (added_at IS NOT NULL AND viewed_at IS NOT NULL
-         AND added_at BETWEEN viewed_at AND viewed_at + INTERVAL '24 hours')
-            AS added_in_24h,
-        (purchased_at IS NOT NULL AND added_at IS NOT NULL
-         AND purchased_at BETWEEN added_at AND added_at + INTERVAL '24 hours')
-            AS purchased_in_24h_of_add
-    FROM first_steps
-    WHERE viewed_at IS NOT NULL
+        v.user_id,
+        v.viewed_at,
+        MIN(e.event_at) AS added_at
+    FROM first_views v
+    LEFT JOIN events e
+      ON e.user_id = v.user_id
+     AND e.event_name = 'add_to_cart'
+     AND e.event_at > v.viewed_at
+     AND e.event_at <= v.viewed_at + INTERVAL '24 hours'
+    GROUP BY v.user_id, v.viewed_at
+),
+first_purchases AS (
+    SELECT
+        a.user_id,
+        a.viewed_at,
+        a.added_at,
+        MIN(e.event_at) AS purchased_at
+    FROM first_adds a
+    LEFT JOIN events e
+      ON e.user_id = a.user_id
+     AND e.event_name = 'purchase'
+     AND e.event_at > a.added_at
+     AND e.event_at <= a.added_at + INTERVAL '24 hours'
+    GROUP BY a.user_id, a.viewed_at, a.added_at
 )
 SELECT
-    COUNT(*)                                               AS n_viewers,
-    SUM(added_in_24h::int)                                 AS n_added,
-    SUM((added_in_24h AND purchased_in_24h_of_add)::int)   AS n_purchased,
-    ROUND(100.0 * SUM(added_in_24h::int) / COUNT(*), 2)    AS view_to_cart_pct,
-    ROUND(100.0 * SUM((added_in_24h AND purchased_in_24h_of_add)::int)
-              / NULLIF(SUM(added_in_24h::int), 0), 2)      AS cart_to_purchase_pct
-FROM flagged;
+    COUNT(*)                                                   AS n_viewers,
+    COUNT(*) FILTER (WHERE added_at IS NOT NULL)               AS n_added,
+    COUNT(*) FILTER (WHERE purchased_at IS NOT NULL)           AS n_purchased,
+    ROUND(100.0 * COUNT(*) FILTER (WHERE added_at IS NOT NULL) / COUNT(*), 2)
+        AS view_to_cart_pct,
+    ROUND(100.0 * COUNT(*) FILTER (WHERE purchased_at IS NOT NULL)
+              / NULLIF(COUNT(*) FILTER (WHERE added_at IS NOT NULL), 0), 2)
+        AS cart_to_purchase_pct
+FROM first_purchases;
 
 -- ============================================================================
--- Why the MIN-timestamp pattern
+-- Why chained MIN timestamps
 -- ============================================================================
 -- A three-way self-join across events with user/time ordering constraints
 -- works, but explodes when a user has many events per step — the
 -- intermediate cartesian product followed by DISTINCT is O(N^3) and
--- produces wrong denominators for percent-conversion. Collapsing each
--- user to one row per funnel step via MIN(event_at) makes the rest of the
--- logic linear in users.
+-- produces wrong denominators for percent-conversion. The safer pattern is
+-- to collapse one step at a time: pick the first valid add after the chosen
+-- view, then the first valid purchase after that chosen add.
 --
--- The remaining subtlety is the step-chaining bug: gating step 3 on
--- "purchase within 24h of VIEW" instead of "within 24h of ADD" silently
--- widens the funnel. Step K should always be measured against step K-1.
+-- Taking independent MIN(event_at) values for each event type is wrong:
+-- an earlier invalid add or purchase can precede the selected prior step.
+-- Step K should always be measured against step K-1.

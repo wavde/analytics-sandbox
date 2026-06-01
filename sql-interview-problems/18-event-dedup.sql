@@ -1,4 +1,4 @@
--- Problem 18: Event Deduplication Within a Time Window
+-- Problem 18: Event Deduplication by Burst
 --
 -- Scenario
 -- --------
@@ -12,10 +12,10 @@
 --
 -- Prompt
 -- ------
--- Given `events (user_id, event_name, event_at)`, collapse events from
--- the same (user, event_name) that occur within 5 seconds of each other
--- into a single logical event. Return one row per logical event with the
--- first and last raw timestamps and the count of raw events collapsed.
+-- Given `events (user_id, event_name, event_at)`, collapse each burst of
+-- same (user, event_name) events where consecutive raw events are no more
+-- than 5 seconds apart. Return one row per logical event with the first
+-- and last raw timestamps and the count of raw events collapsed.
 --
 -- Why this problem matters
 -- ------------------------
@@ -82,21 +82,16 @@ GROUP BY user_id, event_name, logical_event_id
 ORDER BY user_id, event_name, first_event_at;
 
 -- ============================================================================
--- Subtle bug: transitive windows
+-- Burst semantics vs anchor semantics
 -- ============================================================================
--- The query dedups on "consecutive gap <= 5s". Three events at t = 0s,
--- 4s, 8s all collapse into one logical event (chain of gaps each <= 5s),
--- even though the first and last are 8 seconds apart. Usually this is
--- what the business wants — the transitive closure captures bursty
--- retries. When the spec is "collapse events within 5s of the FIRST one"
--- a different pattern is needed: anchor each group to its start and
--- compare against the anchor, not against the previous row.
+-- This query intentionally dedups on "consecutive gap <= 5s". Three events
+-- at t = 0s, 4s, 8s all collapse into one logical event (chain of gaps
+-- each <= 5s), even though the first and last are 8 seconds apart. That
+-- transitive closure matches bursty SDK retries and message replays.
 --
--- Anchor-based variant sketch:
---   A recursive CTE or an iterative approach — not expressible in a
---   single window pass, since SQL windows can't reference "the anchor"
---   (the most recent row where is_new_logical = 1). A practical
---   compromise: do the consecutive-gap pass first, then split any group
---   whose (last - first) span exceeds a secondary threshold.
+-- If the business instead says "collapse only events within 5s of the
+-- FIRST event in the burst," use an anchor-based recursive or iterative
+-- approach that compares each candidate with the current group's start.
+-- Do not silently substitute one semantic for the other.
 --
 -- Spark SQL: identical syntax. Use INTERVAL 5 SECOND (singular, no quotes).

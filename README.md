@@ -10,7 +10,7 @@ Intended audience: practitioners brushing up on window-function patterns, candid
 
 ### [sql-interview-problems/](sql-interview-problems/): 18 problems
 
-SQL problems written in standard PostgreSQL, with Spark SQL and other dialect notes called out where the portable syntax differs. Each problem is framed with a concrete production scenario (streaming sessionisation, payments merchant revenue, travel-marketplace cohort retention, event dedup) so the query is not abstract; it is the query a real team would run.
+SQL problems written primarily for PostgreSQL, with Spark SQL and other dialect notes called out where the portable syntax differs. Recursive CTE examples, especially problem 15, are PostgreSQL-only unless a file explicitly describes a Spark alternative. Each problem is framed with a concrete production scenario (streaming sessionisation, payments merchant revenue, travel-marketplace cohort retention, event dedup) so the query is not abstract; it is the query a real team would run.
 
 Two tiers:
 
